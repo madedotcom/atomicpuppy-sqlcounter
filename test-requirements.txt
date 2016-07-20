@@ -1,0 +1,3 @@
+-e git://github.com/madedotcom/atomicpuppy.git@dynamic-counter#egg=atomicpuppy
+retrying==1.3.3
+sqlalchemy>=0.9,<0.12

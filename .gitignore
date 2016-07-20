@@ -1,0 +1,8 @@
+*.pyc
+.eggs
+*.egg-info/
+dist
+*.log
+.tox/
+*.swp
+.ropeproject/
