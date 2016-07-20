@@ -10,7 +10,9 @@ from sqlalchemy import (
     Table
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session, mapper
+from sqlalchemy.orm import mapper, scoped_session, sessionmaker
+from sqlalchemy.orm.exc import UnmappedClassError
+from sqlalchemy.orm.util import class_mapper
 
 from atomicpuppy.atomicpuppy import EventCounter, counter_circuit_breaker
 
@@ -22,7 +24,6 @@ counters_table = Table('atomicpuppy_counters', metadata,
     )
 
 
-
 class SqlCounter(EventCounter):
 
     class Counter:
@@ -30,15 +31,22 @@ class SqlCounter(EventCounter):
             self.key = key
             self.position = position
 
-    mapper(Counter, counters_table)
     _logger = logging.getLogger(__name__)
 
     def __init__(self, connection_string, instance):
         self._logger = logging.getLogger(__name__)
         self._engine = create_engine(connection_string)
         self._ensured_schema = False
-        self._start_session = scoped_session(sessionmaker(bind=self._engine))
         self._instance_name = instance
+        self._setup_mapper()
+        self._start_session = scoped_session(sessionmaker(bind=self._engine))
+
+    @classmethod
+    def _setup_mapper(cls):
+        try:
+            class_mapper(cls.Counter)
+        except UnmappedClassError:
+            mapper(cls.Counter, counters_table)
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=1000, stop_max_delay=6000)
     def __getitem__(self, stream):
@@ -59,10 +67,10 @@ class SqlCounter(EventCounter):
     def __setitem__(self, stream, val):
         # insert or update where instance = xxx and stream = xxx
         key = self._key(stream)
-        s = self._start_session()
         # make sure the schema is there
         self._ensure_schema()
 
+        s = self._start_session()
         counter = s.query(self.Counter).filter_by(key=key).first()
         if counter:
             counter.position = val
@@ -75,9 +83,9 @@ class SqlCounter(EventCounter):
 
 
     def _read_position(self, key):
-        s = self._start_session()
         # make sure the schema is there
         self._ensure_schema()
+        s = self._start_session()
         counter = s.query(SqlCounter.Counter).filter_by(key=key).first()
         if counter:
             pos = counter.position
@@ -93,6 +101,6 @@ class SqlCounter(EventCounter):
     def _ensure_schema(self):
         if self._ensured_schema:
             return
-
+        
         counters_table.create(self._engine, checkfirst=True)
         self._ensured_schema = True
