@@ -9,8 +9,11 @@ How?
 =============
 
 This package requires AtomicPuppy and depends on SqlAlchemy.
-You should install the package that SqlAlchemy requires to talk to your engine of choice.
-For example, if you use PostgreSQL, you should also install `psycopg2`.
+
+The package itself can be installed using `pip install atomicpuppy_sqlcounter`.
+
+You should also install any package that SqlAlchemy requires to talk to your engine of choice.
+For example, if you use PostgreSQL, you should also install the `psycopg2` package.
 
 To use it, just pass the following configuration to AtomicPuppy:
 
