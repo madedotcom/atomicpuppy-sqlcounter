@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session, mapper
 
-from atomicpuppy.atomicpuppy import EventCounter
+from atomicpuppy.atomicpuppy import EventCounter, counter_circuit_breaker
 
 metadata = MetaData()
 
@@ -26,6 +26,8 @@ class Counter:
         self.key = key
         self.position = position
 
+mapper(Counter, counters_table)
+
 class SqlCounter(EventCounter):
 
     _logger = logging.getLogger(__name__)
@@ -36,7 +38,6 @@ class SqlCounter(EventCounter):
         self._ensured_schema = False
         self._start_session = scoped_session(sessionmaker(bind=self._engine))
         self._instance_name = instance
-        mapper(Counter, counters_table)
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=1000, stop_max_delay=6000)
     def __getitem__(self, stream):

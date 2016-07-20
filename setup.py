@@ -11,7 +11,7 @@ tests_require = [
 
 setup(
     name="atomicpuppy_sqlcounter",
-    version="0.1rc0",
+    version="0.1rc1",
     install_requires=install_requires,
     tests_require=tests_require,
     py_modules=['atomicpuppy_sqlcounter'],
@@ -19,6 +19,6 @@ setup(
     description='A sqlalchemy based counter for AtomicPuppy',
     author='Francesco Pighi',
     keywords=['AtomicPuppy'],
-    download_url='https://github.com/madedotcom/atomicpuppy-sqlcounter/tarball/0.1rc0',
+    download_url='https://github.com/madedotcom/atomicpuppy-sqlcounter/tarball/0.1rc1',
     license='MIT',
 )
