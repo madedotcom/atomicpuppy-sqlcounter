@@ -19,5 +19,6 @@ setup(
     description='A sqlalchemy based counter for AtomicPuppy',
     author='Francesco Pighi',
     keywords=['AtomicPuppy'],
+    download_url='https://github.com/madedotcom/atomicpuppy-sqlcounter/tarball/0.1',
     license='MIT',
 )
