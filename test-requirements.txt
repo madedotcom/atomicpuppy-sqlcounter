@@ -1,3 +1,4 @@
--e git://github.com/madedotcom/atomicpuppy.git@dynamic-counter#egg=atomicpuppy
+atomicpuppy>=0.3rc0
 retrying==1.3.3
 sqlalchemy>=0.9,<0.12
+Contexts

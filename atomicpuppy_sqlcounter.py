@@ -21,15 +21,16 @@ counters_table = Table('atomicpuppy_counters', metadata,
         Column('position', Integer),
     )
 
-class Counter:
-    def __init__(self, key, position):
-        self.key = key
-        self.position = position
 
-mapper(Counter, counters_table)
 
 class SqlCounter(EventCounter):
 
+    class Counter:
+        def __init__(self, key, position):
+            self.key = key
+            self.position = position
+
+    mapper(Counter, counters_table)
     _logger = logging.getLogger(__name__)
 
     def __init__(self, connection_string, instance):
@@ -62,11 +63,11 @@ class SqlCounter(EventCounter):
         # make sure the schema is there
         self._ensure_schema()
 
-        counter = s.query(Counter).filter_by(key=key).first()
+        counter = s.query(self.Counter).filter_by(key=key).first()
         if counter:
             counter.position = val
         else:
-            counter = Counter(key=key, position=val)
+            counter = self.Counter(key=key, position=val)
         s.add(counter)
         s.commit()
         s.flush()
@@ -77,7 +78,7 @@ class SqlCounter(EventCounter):
         s = self._start_session()
         # make sure the schema is there
         self._ensure_schema()
-        counter = s.query(Counter).filter_by(key=key).first()
+        counter = s.query(SqlCounter.Counter).filter_by(key=key).first()
         if counter:
             pos = counter.position
         else:
