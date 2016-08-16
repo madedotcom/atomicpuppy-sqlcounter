@@ -78,7 +78,6 @@ class SqlCounter(EventCounter):
             counter = self.Counter(key=key, position=val)
         s.add(counter)
         s.commit()
-        s.flush()
         s.close()
 
 
