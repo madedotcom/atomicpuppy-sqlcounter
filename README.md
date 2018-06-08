@@ -24,3 +24,12 @@ counter:
     parameters:
         connection_string: <SQLALCHEMY CONNECTION STRING>
 ```
+
+
+Running the tests
+=============
+
+```
+pip install -r test-requirements.txt
+run-contexts
+```
