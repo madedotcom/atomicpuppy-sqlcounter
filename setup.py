@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 install_requires = [
-    "atomicpuppy==0.3rc0",
-    "retrying==1.3.3",
+    "atomicpuppy",
+    "retrying",
 ]
 
 tests_require = [
@@ -11,7 +11,7 @@ tests_require = [
 
 setup(
     name="atomicpuppy_sqlcounter",
-    version="0.1rc3",
+    version="0.2",
     install_requires=install_requires,
     tests_require=tests_require,
     py_modules=['atomicpuppy_sqlcounter'],
