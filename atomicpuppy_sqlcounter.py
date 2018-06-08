@@ -9,7 +9,6 @@ from sqlalchemy import (
     MetaData,
     Table
 )
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, scoped_session, sessionmaker
 from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.orm.util import class_mapper
@@ -18,10 +17,11 @@ from atomicpuppy.atomicpuppy import EventCounter, counter_circuit_breaker
 
 metadata = MetaData()
 
-counters_table = Table('atomicpuppy_counters', metadata,
-        Column('key', String(4000), primary_key=True),
-        Column('position', Integer),
-    )
+counters_table = Table(
+    'atomicpuppy_counters', metadata,
+    Column('key', String(4000), primary_key=True),
+    Column('position', Integer),
+)
 
 
 class SqlCounter(EventCounter):
@@ -50,7 +50,7 @@ class SqlCounter(EventCounter):
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=1000, stop_max_delay=6000)
     def __getitem__(self, stream):
-        self._logger.debug("Fetching last read event for stream "+stream)
+        self._logger.debug("Fetching last read event for stream " + stream)
         key = self._key(stream)
         val = self._read_position(key)
         if val is None:
@@ -100,6 +100,6 @@ class SqlCounter(EventCounter):
     def _ensure_schema(self):
         if self._ensured_schema:
             return
-        
+
         counters_table.create(self._engine, checkfirst=True)
         self._ensured_schema = True
