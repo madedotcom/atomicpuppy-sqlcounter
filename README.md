@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/madedotcom/atomicpuppy-sqlcounter.svg?branch=master)](https://travis-ci.org/madedotcom/atomicpuppy-sqlcounter)
+
+
 What?
 =============
 
@@ -30,6 +33,6 @@ Running the tests
 =============
 
 ```
-pip install -r test-requirements.txt
+pip install -r requirements-ci.txt
 run-contexts
 ```

@@ -1,0 +1,31 @@
+sudo: false
+
+language: python
+
+stages:
+  - name: test
+  - name: deploy
+    if: tag IS present
+
+python:
+  - '3.6'
+
+jobs:
+  include:
+    - stage: test
+      install:
+        - pip install -r requirements.txt
+      script:
+        - run-contexts
+        - python setup.py check -rms
+    - stage: deploy
+      python: 3.6
+      deploy:
+        provider: pypi
+        user: barrachri
+        password:
+          secure: "k7wUdT3ZVHg68tkgTS8yPfh0Wbf+pLvfHe47vsqB+cuGj7tz89BGe7N6bPrv1dpA5aoqJvet3cR1s5j7hl1kA5+gIoxpgQ/g/oRK4KBZlMj4gpjd0yM7Idj4o3+My8J0I3xg7Jg7ovH8t+efrUrTr4kMusWBnHcuH3E/CUtRA0daJf9VFb8/wvxk1dfbPEymQPCIVK8vREGH10ttgzyqCBwCqhPxI8V/CseXnvW2JPsU9zr0BkKb2fotARsgXeIa1O+N4YNHXnUq5aFFIQrOhw5cFUU00big9nLzR2/UCnxgmrLPqQ0jU4bucKbLQKBFklDWZI7CupiWWh/q5SMV3bp0DGkQYvLxKqRr1+4+KuU7Ea34u6Xng46sW6iC8icY4Nx5wbBiFAUzS5bhmpCOizVoEBghvWliuRrSEoTbfHi2BW+jcVVD87JcsUILkyhMdS/QaX1QGnHGKpcYI1TxdZ/SRBAedTQxkA5F1NJ4oANkPb/y6AjF/TsUHkFTo7AD7q+JBae02VaPjxxAusPi0Ye2eywZ7rQZFGdHUXNbes37i792Wv/9z7r/yTPRdJal5clF+u9aZCbddgjxD54Xo2dbZFFUOwLUjOXZVjs9iQOl1Pli+/48KRDzOoJvI44DDdKcW0O7B4Wo4UCm60IxSmbi8l1KR5RSywVJYuD15u0="
+        distributions: sdist bdist_wheel
+        on:
+          tags: true
+          all_branches: true
