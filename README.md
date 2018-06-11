@@ -33,6 +33,6 @@ Running the tests
 =============
 
 ```
-pip install -r requirements-ci.txt
+pip install -r requirements.txt
 run-contexts
 ```
