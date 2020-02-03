@@ -70,27 +70,40 @@ class SqlCounter(EventCounter):
         # make sure the schema is there
         self._ensure_schema()
 
-        s = self._start_session()
-        counter = s.query(self.Counter).filter_by(key=key).first()
-        if counter:
-            counter.position = val
-        else:
-            counter = self.Counter(key=key, position=val)
-        s.add(counter)
-        s.commit()
-        s.close()
+        try:
+            self._logger.debug(f"About to read existing/or create new atomicpuppy_sqlcounter for stream: {stream}")
+            s = self._start_session()
+            counter = s.query(self.Counter).filter_by(key=key).first()
+
+            if counter:
+                self._logger.debug(
+                    f"About to update existing counter for stream {stream} value: {counter.position} to new value: {val}")
+                counter.position = val
+            else:
+                counter = self.Counter(key=key, position=val)
+            self._logger.debug(f"About to commit atomicpuppy_sqlcounter for stream: {stream} to val: {val}")
+            s.add(counter)
+            s.commit()
+        except:
+            s.rollback()
+            raise
+        finally:
+            s.close()
 
 
     def _read_position(self, key):
         # make sure the schema is there
         self._ensure_schema()
         s = self._start_session()
-        counter = s.query(SqlCounter.Counter).filter_by(key=key).first()
-        if counter:
-            pos = counter.position
-        else:
-            pos = None
-        s.close()
+        try:
+            self._logger.debug(f"About to read atomicpuppy_sqlcounter for key: {key}")
+            counter = s.query(SqlCounter.Counter).filter_by(key=key).first()
+            if counter:
+                pos = counter.position
+            else:
+                pos = None
+        finally:
+            s.close()
         return pos
 
 
