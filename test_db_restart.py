@@ -1,4 +1,5 @@
 import pytest
+import sqlalchemy
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.testing.engines import testing_engine
 from sqlalchemy.testing.mock import Mock
@@ -20,21 +21,15 @@ def mock_connection():
     def mock_cursor():
 
         def execute(*args, **kwargs):
-            print(f' in execute with args {args}')
             if conn.explode == "execute":
                 raise MockDisconnect("Lost the DB connection on execute")
             elif args and 'select relname from pg_class' in args[0]:
                 cursor.description = [("relname", None, None, None, None, None)]
             elif args and 'SELECT atomicpuppy_counters.key' in args[0]:
-                print(f' execute args for select from atomicpuppy_counters.key')
                 cursor.description = [("key", None, None, None, None, None), ("position", None, None, None, None, None)]
             elif args and "UPDATE atomicpuppy_counters" in args[0]:
-                print(f' updating what are the args {args}')
-                print(f' value to update to {args[1]["position"]} current value is {fake_atomicpuppy_positions["key_1"]}')
                 cursor.description = None
-                print(f' about to updated counter value to {args[1]["position"]}')
                 fake_atomicpuppy_positions['key_1'] = args[1]["position"]
-                print(f'updated counter value is {fake_atomicpuppy_positions["key_1"]}')
             else:
                 return
 
@@ -44,7 +39,6 @@ def mock_connection():
             )
 
         def fetchall():
-            print(f' in fetchall with cursor {cursor} and type {type(cursor)} and description {cursor.description} ')
             print(f' in fetchall with current counter_value {fake_atomicpuppy_positions["key_1"]}')
             return [['key_1', fake_atomicpuppy_positions["key_1"]]]
 
@@ -110,7 +104,15 @@ def MockDBAPI():
     )
 
 
-class WhenDatabaseRestartsCounterRecovers:
+class WhenDatabaseRestartsSqlCounterPoolRecovers:
+    """ When a db restarts the connections in the pool need to be refreshed. Sqlalchemy only discovers this the first time a connection
+    is used and exception is raised.  Sqlalchemy recognises the raised exception as indicating a db restart and refreshes all the connections in its pool.
+    Hence this first transaction post restart fails https://docs.sqlalchemy.org/en/13/core/pooling.html#pool-disconnects and it is up
+    to the application to retry it. If, in addition, this first transaction is not closed then all subsequent transactions fail
+    with sqlalchemy.exc.StatementError with message "Can't reconnect until invalid transaction is rolled back".
+    This test shows that SqlCounter is behaving responsibly, closing sessions when exceptions are raised and hence is
+    avoiding repeated "Can't reconnect until invalid transaction is rolled back" on db restart
+    """
 
     def _prepare_mock_dbapi(self):
         self.dbapi = MockDBAPI()
@@ -131,7 +133,6 @@ class WhenDatabaseRestartsCounterRecovers:
     def because_there_is_a_connection_in_the_pool_and_the_db_is_restarted(self):
         assert len(self.counter._engine.pool._pool.queue) == 0
         self.counter['key_1'] = 20
-        print(f' reading the value back that we just set to 20')
         val = self.counter['key_1']
         assert val == 20
         assert len(self.counter._engine.pool._pool.queue) == 1
@@ -149,6 +150,52 @@ class WhenDatabaseRestartsCounterRecovers:
         self.counter['key_1'] = 3
         val = self.counter['key_1']
         assert val == 3
+
+    def cleanup_db(self):
+        self.dbapi.dispose()
+
+
+class WhenDatabaseRestartsBadlyBehavedSessionsCanMakePoolConnectionsUnusable:
+
+    def _prepare_mock_dbapi(self):
+        self.dbapi = MockDBAPI()
+        self.db = testing_engine(
+            "postgresql://foo:bar@localhost/test",
+            options=dict(module=self.dbapi, _initialize=False),
+        )
+        self.db.dialect.is_disconnect = lambda e, conn, cursor: isinstance(
+            e, MockDisconnect
+        )
+        self._start_session = scoped_session(sessionmaker(bind=self.db))
+
+    def because_there_is_a_connection_in_the_pool_and_the_db_is_restarted(self):
+        self._prepare_mock_dbapi()
+        assert len(self.db.pool._pool.queue) == 0
+        session = self._start_session()
+        try:
+            session.execute('SELECT atomicpuppy_counters.key FROM atomicpuppy_counters;')
+        finally:
+            session.close()
+        assert len(self.db.pool._pool.queue) == 1
+
+        self.dbapi.shutdown()
+        self.dbapi.restart()
+
+    def it_should_first_fail_as_disconnected_and_then_fail_again_with_transaction_needs_rollback(self):
+        assert len(self.db.pool._pool.queue) == 1
+        session = self._start_session()
+        with pytest.raises(Exception) as ex:
+            session.execute('SELECT atomicpuppy_counters.key FROM atomicpuppy_counters;')
+        assert 'Lost the DB connection on execute' in str(ex.value)
+
+        # Second attempt has the invalid transaction problem
+        session = self._start_session()
+        with pytest.raises(sqlalchemy.exc.StatementError) as ex:
+            session.execute('SELECT atomicpuppy_counters.key FROM atomicpuppy_counters;')
+
+        expected_error = "Can't reconnect until invalid transaction is rolled back"
+        assert expected_error in str(ex.value)
+        assert "SELECT atomicpuppy_counters.key FROM atomicpuppy_counters;" in str(ex.value)
 
     def cleanup_db(self):
         self.dbapi.dispose()
