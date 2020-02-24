@@ -1,3 +1,4 @@
 -e .
 Contexts
+docutils
 psycopg2-binary
