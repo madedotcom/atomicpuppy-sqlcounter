@@ -67,5 +67,3 @@ class WhenTwoSqlCountersAreBuiltInTheSameThread:
 
     def it_should_be_readable_by_the_second(self):
         assert self.counter2['test4-key'] == 42
-
-
