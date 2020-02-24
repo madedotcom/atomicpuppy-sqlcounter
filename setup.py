@@ -4,11 +4,12 @@ from setuptools import setup
 install_requires = [
     "atomicpuppy",
     "retrying",
+    "sqlalchemy",
 ]
 
 setup(
     name="atomicpuppy_sqlcounter",
-    version="0.21",
+    version="0.3",
     install_requires=install_requires,
     py_modules=['atomicpuppy_sqlcounter'],
     url='https://github.com/madedotcom/atomicpuppy-sqlcounter',
